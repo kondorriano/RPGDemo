@@ -35,4 +35,16 @@ public class Unit : MonoBehaviour, UnitInterface
     {
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
     }
+
+    /*
+    private void OnValidate()
+    {
+        LevelGrid grid = FindObjectOfType<LevelGrid>();
+        if (grid == null) return;
+        int x, y;
+        grid.GetXY(transform.position, out x, out y);
+        transform.position = grid.GetWorldPosition(x, y);
+    }
+    */
+
 }

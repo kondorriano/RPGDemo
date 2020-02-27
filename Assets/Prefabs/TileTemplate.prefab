@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8217186371152187606}
   - component: {fileID: 2357067862907296333}
   - component: {fileID: 7035812187618236152}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TileModel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -89,7 +89,7 @@ GameObject:
   - component: {fileID: 6291907487459255775}
   - component: {fileID: 6250867741365124060}
   - component: {fileID: 4885514934761791369}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PathRenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -165,7 +165,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4059171992690490667}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TileTemplate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
