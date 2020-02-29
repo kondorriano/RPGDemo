@@ -5,6 +5,7 @@ using UnityEngine;
 
 interface UnitInterface
 {   
+    GameManager.ControllerType ControlledBy { get; set; }
     int MaximumHealth { get; set; }
     int CurrentHealth { get; set; }
     int DamageAttack { get; set; }
@@ -17,15 +18,21 @@ interface UnitInterface
 public class Unit : MonoBehaviour, UnitInterface
 {
     [Header("Unit Parameters")]
-    public int _maximumHealth = 10;
+    [SerializeField] GameManager.ControllerType _controlledBy = GameManager.ControllerType.Player;
+    public GameManager.ControllerType ControlledBy { get { return _controlledBy; } set { _controlledBy = value; } }
+    [SerializeField] int _maximumHealth = 10;
     public int MaximumHealth { get { return _maximumHealth; } set { _maximumHealth = value; } }
     public int CurrentHealth { get; set; }
-    public int _damageAttack = 2;
-    public int DamageAttack { get { return _maximumHealth; } set { _maximumHealth = value; } }
-    public int _attackRange = 1;
-    public int AttackRange { get { return _maximumHealth; } set { _maximumHealth = value; } }
-    public int _moveRange = 3;
-    public int MoveRange { get { return _maximumHealth; } set { _maximumHealth = value; } }
+    [SerializeField] int _damageAttack = 2;
+    public int DamageAttack { get { return _damageAttack; } set { _damageAttack = value; } }
+    [SerializeField] int _attackRange = 1;
+    public int AttackRange { get { return _attackRange; } set { _attackRange = value; } }
+    [SerializeField] int _moveRange = 3;
+    public int MoveRange { get { return _moveRange; } set { _moveRange = value; } }
+
+    public bool HasMoved { get; set; }
+    public bool HasAttacked { get; set; }
+
 
     public void Start()
     {
@@ -35,16 +42,4 @@ public class Unit : MonoBehaviour, UnitInterface
     {
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
     }
-
-    /*
-    private void OnValidate()
-    {
-        LevelGrid grid = FindObjectOfType<LevelGrid>();
-        if (grid == null) return;
-        int x, y;
-        grid.GetXY(transform.position, out x, out y);
-        transform.position = grid.GetWorldPosition(x, y);
-    }
-    */
-
 }

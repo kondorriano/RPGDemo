@@ -27,7 +27,6 @@ public class LevelGrid : MonoBehaviour
     }
 
     [SerializeField] Column[] _grid;
-    List<LevelTile> _paintedTiles;
 
     LevelTile this[int x, int y]
     {
@@ -84,6 +83,11 @@ public class LevelGrid : MonoBehaviour
         if (_levelCollider == null)
             Debug.Break();
         _levelCollider.localScale = new Vector3(Width, 1, Height);
+
+        Camera camera = Camera.main;
+        if (camera == null)
+            Debug.Break();
+        camera.transform.root.position = new Vector3(Width * .5f -.5f,0, 0);
     }
 
     LevelTile GenerateNewTile(int x, int y)
@@ -108,7 +112,6 @@ public class LevelGrid : MonoBehaviour
 
     public void Init()
     {
-        _paintedTiles = new List<LevelTile>();
     }
 
     public LevelTile GetGridTile(Vector3 worldPosition)
@@ -124,39 +127,21 @@ public class LevelGrid : MonoBehaviour
         return this[x, y];
     }
 
-    public void SetGridTileUnit(Vector3 worldPosition, Unit unit)
+    public LevelTile GetNearestUnitFreeTile(Vector3 worldPosition)
     {
         int x, y;
         GetXY(worldPosition, out x, out y);
-        SetGridTileUnit(x, y, unit);
+        return GetNearestUnitFreeTile(x, y);
     }
 
-    public void SetGridTileUnit(int x, int y, Unit unit)
-    {
-        if (x < 0 || x >= Width) return;
-        if (y < 0 || y >= Height) return;
-        this[x, y].UnitInTile = unit;
-    }
-
-    public bool GetNearestUnitFreePosition(Vector3 worldPosition, out Vector3 tilePosition)
-    {
-        int x, y;
-        GetXY(worldPosition, out x, out y);
-        return GetNearestUnitFreePosition(x, y, out tilePosition);
-
-    }
-
-    public bool GetNearestUnitFreePosition(int x, int y, out Vector3 tilePosition)
+    public LevelTile GetNearestUnitFreeTile(int x, int y)
     {
         if (x < 0 || x >= Width) x = Mathf.Clamp(x, 0, Width-1);
         if (y < 0 || y >= Height) y = Mathf.Clamp(y, 0, Height-1);
 
         LevelTile currentTile = GetGridTile(x, y);
         if (currentTile.UnitInTile == null)
-        {
-            tilePosition = GetWorldPosition(x, y);
-            return true;
-        }
+            return currentTile;
 
         List<int[]> searchTiles = new List<int[]>();
         bool[,] checkedTiles = new bool[Width, Height];
@@ -183,10 +168,7 @@ public class LevelGrid : MonoBehaviour
                 if (currentTile == null) 
                     continue;
                 if (currentTile.UnitInTile == null)
-                {
-                    tilePosition = GetWorldPosition(newX, newY);
-                    return true;
-                }
+                    return currentTile;
 
                 if(!checkedTiles[newX, newY]) 
                     searchTiles.Add(new int[] { newX, newY});
@@ -194,8 +176,7 @@ public class LevelGrid : MonoBehaviour
                 
         }
 
-        tilePosition = Vector3.zero;
-        return false;
+        return null;
     }
 
     public Vector3[] FindPathInRange(Vector3 startPosition, Vector3 endPosition, int range)
@@ -298,45 +279,24 @@ public class LevelGrid : MonoBehaviour
         y = Mathf.FloorToInt((worldPosition - OriginPosition).z + .5f);
     }
 
-    public void PaintTile(Vector3 worldPosition, Color color)
+    public LevelTile[] GetTilesInRange(Vector3 worldPosition, int range, bool onlyFreeTiles = true)
     {
         int x, y;
         GetXY(worldPosition, out x, out y);
-        PaintTile(x, y, color);
+        return GetTilesInRange(x, y, range, onlyFreeTiles);
     }
-    public void PaintTile(int x, int y, Color color)
-    {
-        if (x < 0 || x >= Width) return;
-        if (y < 0 || y >= Height) return;
-        LevelTile tile = this[x, y];
-        tile.PathRenderer.enabled = true;
-        tile.PathRenderer.material.color = color;
-        if (!_paintedTiles.Contains(tile)) _paintedTiles.Add(tile);
-    }
-    public void ClearPaintedTiles()
-    {
-        foreach(LevelTile tile in _paintedTiles)
-            tile.PathRenderer.enabled = false;
-        _paintedTiles.Clear();
-    }
-
-    public void PaintTilesInRange(Vector3 worldPosition, int range, Color color, bool onlyFreeTiles = true)
-    {
-        int x, y;
-        GetXY(worldPosition, out x, out y);
-        PaintTilesInRange(x, y, range, color, onlyFreeTiles);
-    }
-    public void PaintTilesInRange(int x, int y, int range, Color color, bool onlyFreeTiles = true)
+    public LevelTile[] GetTilesInRange(int x, int y, int range, bool onlyFreeTiles = true)
     {
         LevelTile currentTile = GetGridTile(x, y);
-        if (range < 0 || currentTile == null) return;
+        List<LevelTile> tilesInRange = new List<LevelTile>();
+        if (range < 0 || currentTile == null) return tilesInRange.ToArray();
         List<int[]> searchTiles = new List<int[]>();
         bool[,] checkedTiles = new bool[Width, Height];
         checkedTiles[x, y] = true;
 
         //First tile neighbors always checked even if tile is not free
-        if (!onlyFreeTiles || currentTile.UnitInTile == null) 
-            PaintTile(x, y, color);
+        if (!onlyFreeTiles || currentTile.UnitInTile == null)
+            tilesInRange.Add(currentTile);
         if (range > 0)
         {
             for (int i = 0; i < directions.Length; i++)
@@ -355,13 +315,15 @@ public class LevelGrid : MonoBehaviour
                 continue;
 
             checkedTiles[x, y] = true;
-            PaintTile(x, y, color);
+            tilesInRange.Add(currentTile);
             if(range > 0)
             {
                 for (int i = 0; i < directions.Length; i++)
                     searchTiles.Add(new int[] { x + directions[i][0], y + directions[i][1], range-1 });
             }            
         }
+
+        return tilesInRange.ToArray();
     }
 
     readonly int[][] directions = new int[][]
