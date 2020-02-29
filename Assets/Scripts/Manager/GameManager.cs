@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -15,21 +16,6 @@ public class GameManager : MonoBehaviour
         Moving,
         Attacking
     }
-    public class TileSelector
-    {
-        public LevelTile tile;
-        public Vector3 selectedPosition;
-        public Color previousColor;
-        public bool wasPainted;
-
-        public TileSelector(LevelTile Tile, Vector3 SelectedPosition, bool WasPainted, Color PreviousColor)
-        {
-            tile = Tile;
-            selectedPosition = SelectedPosition;
-            wasPainted = WasPainted;
-            previousColor = PreviousColor;
-        }
-    }
 
     public static GameManager instance = null;
 
@@ -37,12 +23,17 @@ public class GameManager : MonoBehaviour
     public LevelGrid Grid { get { return _grid; } }
     [SerializeField] UIController _uiController = null;
     public UIController UI { get { return _uiController; } }
+    [SerializeField] AIController _aiController = null;
+    [SerializeField] PlayerController _playerController = null;
+
 
     SelectionState _selectionState = SelectionState.None;
 
     TileSelector _selectedTile = null;
     TileSelector _secondarySelectedTile = null;
     LevelTile[] _rangeTiles;
+    List<Unit> _playerUnits;
+    List<Unit> _aiUnits;
 
     private void Awake()
     {
@@ -59,6 +50,10 @@ public class GameManager : MonoBehaviour
 
     void Init()
     {
+        Time.timeScale = 1;
+        _playerUnits = new List<Unit>();
+        _aiUnits = new List<Unit>();
+
         _selectionState = SelectionState.None;
 
         Grid.Init();
@@ -67,11 +62,15 @@ public class GameManager : MonoBehaviour
         int i = 0;
         for (; i < units.Length; i++)
         {
-            tile = Grid.GetNearestUnitFreeTile(units[i].transform.position);
+            tile = Grid.GetNearestUnitFreeTile(units[i].Position);
             if (tile != null)
             {
-                units[i].transform.position = tile.Position;
+                units[i].Position = tile.Position;
                 tile.UnitInTile = units[i];
+                if (units[i].ControlledBy == ControllerType.Player)
+                    _playerUnits.Add(units[i]);
+                else if (units[i].ControlledBy == ControllerType.AI)
+                    _aiUnits.Add(units[i]);
             }
             else break;
         }
@@ -82,13 +81,22 @@ public class GameManager : MonoBehaviour
             Destroy(units[i].gameObject);
         }
 
-        /*
-        Vector3[] path = Grid.FindPathInRange(units[0].transform.position, units[1].transform.position, 20);
-        for(i = 0; i < path.Length; i++)
+        EndAIsTurn();
+    }
+
+    void ResetSelection()
+    {
+        if(_selectedTile != null)
         {
-            Grid.PaintTile(path[i], Color.red);
+            _selectedTile.tile.IsSelected = false;
+            _selectedTile = null;
         }
-        */
+
+        if (_secondarySelectedTile != null)
+        {
+            _secondarySelectedTile.tile.IsSelected = false;
+            _secondarySelectedTile = null;
+        }
     }
 
     public void SelectTile(Vector3 worldPosition, ControllerType controlledBy)
@@ -99,7 +107,7 @@ public class GameManager : MonoBehaviour
             {
                 _selectedTile.tile.PaintTile(Color.green);
                 //Show player menu
-                UI.ShowPlayerUnitPanel(_selectedTile.tile.UnitInTile != null && _selectedTile.tile.UnitInTile.ControlledBy == controlledBy);
+                UI.ShowPlayerUnitPanel(controlledBy == ControllerType.Player && _selectedTile.tile.UnitInTile != null && _selectedTile.tile.UnitInTile.ControlledBy == controlledBy);
             }
         }
         else 
@@ -116,6 +124,11 @@ public class GameManager : MonoBehaviour
                         UI.SetPlayerUnitConfirmButton(IsSecondaryTileInAttackRange(controlledBy));
                 }
             }
+        }
+
+        if (_selectedTile?.tile.UnitInTile != null)
+        {
+            UI.SetPlayerUnitButtons(!_selectedTile.tile.UnitInTile.HasMoved, !_selectedTile.tile.UnitInTile.HasAttacked);
         }
     }
 
@@ -184,8 +197,8 @@ public class GameManager : MonoBehaviour
     {
         _selectionState = newState;
         UI.SelectionStateChanged(_selectionState);
-        
-        if(_selectedTile?.tile.UnitInTile != null)
+
+        if (_selectedTile?.tile.UnitInTile != null)
         {
             UI.SetPlayerUnitButtons(!_selectedTile.tile.UnitInTile.HasMoved, !_selectedTile.tile.UnitInTile.HasAttacked);
         }
@@ -238,7 +251,7 @@ public class GameManager : MonoBehaviour
     {
         Unit unit = _selectedTile.tile.UnitInTile;
         _secondarySelectedTile.tile.UnitInTile = unit;
-        unit.transform.position = _secondarySelectedTile.tile.Position;
+        unit.Position = _secondarySelectedTile.tile.Position;
         unit.HasMoved = true;
         _selectedTile.tile.UnitInTile = null;
         _selectedTile.tile.IsSelected = false;
@@ -259,28 +272,119 @@ public class GameManager : MonoBehaviour
         //CHECK IF UNIT IS DEAD
     }
 
-
-
-
-    public void StartPlayersTurn()
+    public void EndPlayersTurn()
     {
-        //Show UI Start Animation
-        //After UI Start done
-            //Show Player General UI
+        for(int i = 0; i < _playerUnits.Count; i++)
+        {
+            _playerUnits[i].HasAttacked = false;
+            _playerUnits[i].HasMoved = false;
+        }
+        _playerController.IsActive = false;
+        UI.SetTurnUI(false);
+        ResetSelection();
+        _aiController.StartAIsTurn();
     }
 
-    public void StartAIsTrurn()
+    public void EndAIsTurn()
     {
-        //Show UI Start Animation
-        //After UI Start done
-            //Let AI do things
+        for (int i = 0; i < _aiUnits.Count; i++)
+        {
+            _aiUnits[i].HasAttacked = false;
+            _aiUnits[i].HasMoved = false;
+        }
+        _playerController.IsActive = true;
+        UI.SetTurnUI(true);
+        ResetSelection();
     }
 
-    public void SelectTile(Vector3 worldPosition, bool isPlayer)
+    public Unit[] GetAIUnits()
     {
-        //Get unit
-        //if is unit && !selected unit
-        //If unit is player and isPlayer
-        //show 
+        return _aiUnits.ToArray();
+    }
+
+    public Vector3 GetClosestFreeTilePositionInRangeFromUnitToUnit(Unit fromUnit, Unit toUnit, int range)
+    {
+        if (range < 1) return fromUnit.Position;
+        Vector3[] path = Grid.FindPath(fromUnit.Position, toUnit.Position);
+        if (path == null) return fromUnit.Position;
+
+        int bestIndex = Mathf.Min(range-1, path.Length-1);
+        return path[bestIndex];
+    }
+
+    public Unit GetClosestPlayerUnit(Vector3 position)
+    {
+        if (_playerUnits.Count < 1) return null;
+        int closestUnitIndex = 0;
+        float closestSqrDistance = (_playerUnits[closestUnitIndex].Position - position).sqrMagnitude;
+        float currentSqrDistance;
+        for(int i = 1; i < _playerUnits.Count; i++)
+        {
+            currentSqrDistance = (_playerUnits[i].Position - position).sqrMagnitude;
+            if (closestSqrDistance > currentSqrDistance)
+            {
+                closestSqrDistance = currentSqrDistance;
+                closestUnitIndex = i;
+            }
+        }
+        return _playerUnits[closestUnitIndex];
+    }
+
+    public void UnitDefeated(Unit unit)
+    {
+        LevelTile tile = Grid.GetGridTile(unit.Position);
+        tile.UnitInTile = null;
+        _playerUnits.Remove(unit);
+        _aiUnits.Remove(unit);
+        Destroy(unit.gameObject);
+        
+        if (_playerUnits.Count < 1) 
+            EndGame(false);
+        else if (_aiUnits.Count < 1)
+            EndGame(true);
+    }
+
+    void EndGame(bool playerWins)
+    {
+        UI.ShowEndGame(playerWins);
+        Time.timeScale = 0;
+    }
+
+    public void RestartGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitGame()
+    {
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
+    }
+
+    public Vector3 ClampToGridBounds(Vector3 worldPosition)
+    {
+        Vector3 gridPosition = Grid.OriginPosition;
+        worldPosition.x = Mathf.Clamp(worldPosition.x, gridPosition.x, gridPosition.x+Grid.Width);
+        worldPosition.z = Mathf.Clamp(worldPosition.z, gridPosition.z, gridPosition.z+Grid.Height);
+        return worldPosition;
+    }
+
+    public class TileSelector
+    {
+        public LevelTile tile;
+        public Vector3 selectedPosition;
+        public Color previousColor;
+        public bool wasPainted;
+
+        public TileSelector(LevelTile Tile, Vector3 SelectedPosition, bool WasPainted, Color PreviousColor)
+        {
+            tile = Tile;
+            selectedPosition = SelectedPosition;
+            wasPainted = WasPainted;
+            previousColor = PreviousColor;
+        }
     }
 }

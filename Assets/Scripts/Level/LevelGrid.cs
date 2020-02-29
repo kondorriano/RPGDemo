@@ -179,6 +179,78 @@ public class LevelGrid : MonoBehaviour
         return null;
     }
 
+    public Vector3[] FindPath(Vector3 startPosition, Vector3 endPosition) 
+    {
+        int startX, startY, endX, endY;
+        GetXY(startPosition, out startX, out startY);
+        GetXY(endPosition, out endX, out endY);
+
+        if (startX < 0 || startX >= Width) return null;
+        if (startY < 0 || startY >= Height) return null;
+        if (endX < 0 || endX >= Width) return null;
+        if (endY < 0 || endY >= Height) return null;
+
+        LevelTile endTile = GetGridTile(endX, endY);
+        LevelTile startTile = GetGridTile(startX, startY);
+        if (startTile == endTile) return null;
+        List<int[]> searchTiles = new List<int[]>();
+        TileInPath[,] tilesInRange = new TileInPath[Width, Height];
+        tilesInRange[startX, startY] = new TileInPath(startX, startY, null);
+
+        int x, y;
+        for (int i = 0; i < directions.Length; i++)
+        {
+            x = startX + directions[i][0];
+            y = startY + directions[i][1];
+            if (x < 0 || x >= Width) continue;
+            if (y < 0 || y >= Height) continue;
+            tilesInRange[x, y] = new TileInPath(x, y, tilesInRange[startX, startY]);
+            searchTiles.Add(new int[] {x, y});
+        }
+        LevelTile currentTile;
+        int[] currentTileInfo;
+
+        while (searchTiles.Count > 0)
+        {
+            currentTileInfo = searchTiles[0];
+            searchTiles.RemoveAt(0);
+            x = currentTileInfo[0];
+            y = currentTileInfo[1];
+            currentTile = GetGridTile(x, y);
+            if (currentTile == endTile)
+            {
+
+                TileInPath currentTileInPath = tilesInRange[x, y].parent;
+                List<Vector3> path = new List<Vector3>();
+                //END
+                while (currentTileInPath != tilesInRange[startX, startY])
+                {
+                    path.Add(GetWorldPosition(currentTileInPath.x, currentTileInPath.y));
+                    currentTileInPath = currentTileInPath.parent;
+                }
+
+                path.Reverse();
+                return path.ToArray();
+            }
+            if (currentTile == null || currentTile.UnitInTile != null)
+                continue;
+
+            int newX, newY;
+            for (int i = 0; i < directions.Length; i++)
+            {
+                newX = x + directions[i][0];
+                newY = y + directions[i][1];
+                if (newX < 0 || newX >= Width) continue;
+                if (newY < 0 || newY >= Height) continue;
+                if (tilesInRange[newX, newY] != null) continue;
+                tilesInRange[newX, newY] = new TileInPath(newX, newY, tilesInRange[x, y]);
+                searchTiles.Add(new int[] { newX, newY});
+            }
+        }
+
+        return null;
+    }
+
     public Vector3[] FindPathInRange(Vector3 startPosition, Vector3 endPosition, int range)
     {
         if (range < 1) return null;

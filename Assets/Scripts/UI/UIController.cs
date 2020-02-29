@@ -7,11 +7,15 @@ using UnityEngine.UI;
 public class UIController : MonoBehaviour
 {
     [SerializeField] GameObject _playerUnitPanel = null;
+    [SerializeField] GameObject _endGamePanel = null;
     [SerializeField] Button _moveButton = null;
     [SerializeField] Button _attackButton = null;
     [SerializeField] Button _confirmButton = null;
+    [SerializeField] Button _endTurnButton = null;
     [SerializeField] TextMeshProUGUI _moveText = null;
     [SerializeField] TextMeshProUGUI _attackText = null;
+    [SerializeField] TextMeshProUGUI _turnText = null;
+    [SerializeField] TextMeshProUGUI _endGameText = null;
 
     public void ShowPlayerUnitPanel(bool show)
     {
@@ -34,11 +38,30 @@ public class UIController : MonoBehaviour
         _attackButton.interactable = canAttack;
     }
 
+    public void ShowEndGame(bool playerWins)
+    {
+        _endGamePanel.SetActive(true);
+        _endGameText.text = (playerWins) ? "Player Wins!" : "Enemies Win";
+        ShowPlayerUnitPanel(false);
+        SetEndTurnButton(false);
+    }
+
     public void SelectionStateChanged(GameManager.SelectionState state)
     {
         _moveText.text = (state == GameManager.SelectionState.Moving) ? "Cancel" : "Move";
         _attackText.text = (state == GameManager.SelectionState.Attacking) ? "Cancel" : "Attack";
         ShowPlayerUnitConfirmButton(state != GameManager.SelectionState.None);
+    }
+
+    public void SetTurnUI(bool usePlayersText)
+    {
+        SetEndTurnButton(usePlayersText);
+        _turnText.text = (usePlayersText) ? "Player's Turn" : "Enemy's Turn";
+    }
+
+    public void SetEndTurnButton(bool show)
+    {
+        _endTurnButton.gameObject.SetActive(show);
     }
 
     public void MoveButtonPressed()
@@ -53,5 +76,20 @@ public class UIController : MonoBehaviour
     public void ConfirmButtonPressed()
     {
         GameManager.instance.ConfirmAction();
+    }
+
+    public void EndTurnButtonPressed()
+    {
+        GameManager.instance.EndPlayersTurn();
+    }
+
+    public void PlayAgainButtonPressed()
+    {
+        GameManager.instance.RestartGame();
+    }
+
+    public void ExitButtonPressed()
+    {
+        GameManager.instance.QuitGame();
     }
 }

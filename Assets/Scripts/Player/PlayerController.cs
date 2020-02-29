@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
 {
     // Update is called once per frame
     Vector2 _previousTouchPosition;
-
+    public bool IsActive { get; set; }
     void Update()
     {
 
@@ -45,6 +45,7 @@ public class PlayerController : MonoBehaviour
 
     void SelectTile(Vector2 mousePosition)
     {
+        if (!IsActive) return;
         Ray mouseRay = Camera.main.ScreenPointToRay(mousePosition);
         RaycastHit hit;
         if (Physics.Raycast(mouseRay, out hit, 100))
@@ -54,7 +55,10 @@ public class PlayerController : MonoBehaviour
     void MoveCamera(Vector2 mousePosition)
     {
         Vector3 direction = mousePosition - _previousTouchPosition;
+        Vector3 cameraPosition = Camera.main.transform.root.position;
         direction = new Vector3(direction.x / Screen.width, 0, direction.y / Screen.height);
-        Camera.main.transform.root.position -= direction * 20;
+        cameraPosition -= direction * 20;
+        cameraPosition = GameManager.instance.ClampToGridBounds(cameraPosition);
+        Camera.main.transform.root.position = cameraPosition;
     }
 }
