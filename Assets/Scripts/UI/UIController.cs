@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
 {
+    #region VARIABLES
     [SerializeField] GameObject _playerUnitPanel = null;
     [SerializeField] GameObject _endGamePanel = null;
     [SerializeField] Button _moveButton = null;
@@ -16,7 +17,9 @@ public class UIController : MonoBehaviour
     [SerializeField] TextMeshProUGUI _attackText = null;
     [SerializeField] TextMeshProUGUI _turnText = null;
     [SerializeField] TextMeshProUGUI _endGameText = null;
+    #endregion
 
+    #region UI HANDLING
     public void ShowPlayerUnitPanel(bool show)
     {
         _playerUnitPanel.SetActive(show);
@@ -26,16 +29,6 @@ public class UIController : MonoBehaviour
     {
         _confirmButton.gameObject.SetActive(show);
         if (!show) SetPlayerUnitConfirmButton(false);
-    }
-    public void SetPlayerUnitConfirmButton(bool canConfirm)
-    {
-        _confirmButton.interactable = canConfirm;
-    }
-
-    public void SetPlayerUnitButtons(bool canMove, bool canAttack)
-    {
-        _moveButton.interactable = canMove;
-        _attackButton.interactable = canAttack;
     }
 
     public void ShowEndGame(bool playerWins)
@@ -52,6 +45,19 @@ public class UIController : MonoBehaviour
         _attackText.text = (state == GameManager.SelectionState.Attacking) ? "Cancel" : "Attack";
         ShowPlayerUnitConfirmButton(state != GameManager.SelectionState.None);
     }
+    #endregion
+
+    #region BUTTON HANDLING
+    public void SetPlayerUnitConfirmButton(bool canConfirm)
+    {
+        _confirmButton.interactable = canConfirm;
+    }
+
+    public void SetPlayerUnitButtons(bool canMove, bool canAttack)
+    {
+        _moveButton.interactable = canMove;
+        _attackButton.interactable = canAttack;
+    }
 
     public void SetTurnUI(bool usePlayersText)
     {
@@ -63,7 +69,9 @@ public class UIController : MonoBehaviour
     {
         _endTurnButton.gameObject.SetActive(show);
     }
+    #endregion
 
+    #region BUTTON EVENTS
     public void MoveButtonPressed()
     {
         GameManager.instance.ToggleUnitMoveState();
@@ -72,24 +80,21 @@ public class UIController : MonoBehaviour
     {
         GameManager.instance.ToggleUnitAttackState();
     }
-
     public void ConfirmButtonPressed()
     {
         GameManager.instance.ConfirmAction();
     }
-
     public void EndTurnButtonPressed()
     {
         GameManager.instance.EndPlayersTurn();
     }
-
     public void PlayAgainButtonPressed()
     {
         GameManager.instance.RestartGame();
     }
-
     public void ExitButtonPressed()
     {
         GameManager.instance.QuitGame();
     }
+    #endregion
 }

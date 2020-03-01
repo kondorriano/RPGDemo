@@ -11,13 +11,14 @@ public class AIController : MonoBehaviour
         _aiActionDelay = new WaitForSeconds(_aiActionTime);
     }
 
-    public void StartAIsTurn()
+    public void StartAITurn()
     {
-        StartCoroutine(AIsTurn());
+        StartCoroutine(AITurn());
     }
 
-    IEnumerator AIsTurn()
+    IEnumerator AITurn()
     {
+        //Get All AI Units
         Unit[] aiUnits = GameManager.instance.GetAIUnits();
         foreach(Unit unit in aiUnits)
         {
@@ -25,49 +26,50 @@ public class AIController : MonoBehaviour
             if (playerUnit == null) break;
             float playerUnitDistance = (playerUnit.Position - unit.Position).magnitude;
 
-            //Select unit
+            //Select current Unit
             GameManager.instance.SelectTile(unit.Position, GameManager.ControllerType.AI);
             yield return _aiActionDelay;
-            //Try attack unit in attack range
-            if (playerUnit.AttackRange >= playerUnitDistance)
+            //Try attack Player Unit in attack range
+            if (unit.AttackRange >= playerUnitDistance)
             {
-                //Activate attack 
+                //Activate Attack state
                 GameManager.instance.ToggleUnitAttackState();
                 yield return _aiActionDelay;
-                //Select chosen unit
+                //Select chosen Player Unit
                 GameManager.instance.SelectTile(playerUnit.Position, GameManager.ControllerType.AI);
                 yield return _aiActionDelay;
-                //attack
+                //Attack Unit
                 GameManager.instance.ConfirmAction();
                 yield return _aiActionDelay;
             }
 
-            //if not attacked move
+            //if not attacked Unit Try Move
             if (!unit.HasAttacked)
             {
-                Vector3 closestFreePosition = GameManager.instance.GetClosestFreeTilePositionInRangeFromUnitToUnit(unit, playerUnit, unit.MoveRange);
+                //Find tile in range from Enemy Unit to Player Unit
+                Vector3 closestFreePosition = GameManager.instance.FindClosestTileInRangeFromToUnit(unit, playerUnit, unit.MoveRange);
                 if(closestFreePosition != unit.Position)
                 {
-                    //Activate move
+                    //Activate Move state
                     GameManager.instance.ToggleUnitMoveState();
                     yield return _aiActionDelay;
-                    //Select chosen tile
+                    //Select chosen Tile to Move to
                     GameManager.instance.SelectTile(closestFreePosition, GameManager.ControllerType.AI);
                     yield return _aiActionDelay;
-                    //move to close unit
+                    //Move to Tile
                     GameManager.instance.ConfirmAction();
 
-                    //if not attacked and unit in range 
+                    //If not attacked and Player Unit in range 
                     playerUnitDistance = (playerUnit.Position - unit.Position).magnitude;
-                    if (playerUnit.AttackRange >= playerUnitDistance)
+                    if (unit.AttackRange >= playerUnitDistance)
                     {
-                        //Activate attack 
+                        //Activate Attack state
                         GameManager.instance.ToggleUnitAttackState();
                         yield return _aiActionDelay;
-                        //Select chosen unit
+                        //Select chosen Player Unit
                         GameManager.instance.SelectTile(playerUnit.Position, GameManager.ControllerType.AI);
                         yield return _aiActionDelay;
-                        //attack
+                        //Attack Unit
                         GameManager.instance.ConfirmAction();
                         yield return _aiActionDelay;
                     }
@@ -75,7 +77,7 @@ public class AIController : MonoBehaviour
             }
         }
 
-        //End turn
+        //End AI Turn
         yield return _aiActionDelay;
         GameManager.instance.EndAIsTurn();
     }

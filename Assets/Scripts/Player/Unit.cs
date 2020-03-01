@@ -15,8 +15,21 @@ interface UnitInterface
     void Start();
     void TakeDamage(int amount);
 }
+
 public class Unit : MonoBehaviour, UnitInterface
 {
+    #region EVENT ARGUMENTS
+    public class HealthEventArgs : EventArgs
+    {
+        public float Amount { get; private set; }
+        public HealthEventArgs(float amount)
+        {
+            Amount = amount;
+        }
+    }
+    #endregion
+
+    #region VARIABLES, PROPERTIES AND EVENTS
     [Header("Unit Components")]
     [SerializeField] HealthBar _healthBar = null;
     [SerializeField] Animator _animator = null;
@@ -33,19 +46,19 @@ public class Unit : MonoBehaviour, UnitInterface
     public int AttackRange { get { return _attackRange; } set { _attackRange = value; } }
     [SerializeField] int _moveRange = 3;
     public int MoveRange { get { return _moveRange; } set { _moveRange = value; } }
-
     public Vector3 Position { get { return transform.position; } set { transform.position = value; } }
-
     public bool HasMoved { get; set; }
     public bool HasAttacked { get; set; }
 
     public event EventHandler<HealthEventArgs> Damaged;
+    #endregion
 
     public void Start()
     {
         CurrentHealth = MaximumHealth;
         Damaged += (sender, args) => _healthBar.SetHealthValue(args.Amount);
     }
+
     public void TakeDamage(int amount)
     {
         CurrentHealth = Mathf.Max(CurrentHealth - amount, 0);
@@ -54,14 +67,5 @@ public class Unit : MonoBehaviour, UnitInterface
 
         if (CurrentHealth <= 0)
             GameManager.instance.UnitDefeated(this);
-    }
-
-    public class HealthEventArgs : EventArgs
-    {
-        public float Amount { get; private set; }
-        public HealthEventArgs(float amount)
-        {
-            Amount = amount;
-        }
     }
 }

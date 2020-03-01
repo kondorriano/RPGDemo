@@ -5,6 +5,7 @@ using UnityEngine;
 [System.Serializable]
 public class LevelTile
 {
+    #region VARIABLES AND PROPERTIES
     [SerializeField] Renderer _pathRenderer = null;
     public Renderer PathRenderer { get { return _pathRenderer; } private set { _pathRenderer = value; } }
     [SerializeField] GameObject _tileObject = null;
@@ -15,6 +16,7 @@ public class LevelTile
 
     public bool IsSelected { get { return _pathRenderer.enabled; } set { _pathRenderer.enabled = value; } }
     public Color TileColor { get { return _pathRenderer.material.color; } set { _pathRenderer.material.color = value; } }
+    #endregion
 
     public LevelTile(GameObject tileObject, Renderer pathRenderer)
     {
@@ -27,6 +29,4 @@ public class LevelTile
         IsSelected = true;
         TileColor = color;
     }
-
-
 }

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class HealthBar : MonoBehaviour
 {
-    [SerializeField] Image _healthBar;
+    [SerializeField] Image _healthBar = null;
     public void SetHealthValue(float amount)
     {
         _healthBar.fillAmount = amount;
